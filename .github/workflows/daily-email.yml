@@ -1,0 +1,25 @@
+name: Send Daily Pig Pic Email
+
+on:
+  schedule:
+    # Runs at 10:00 AM GMT every day
+    - cron: '0 10 * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Send daily email
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: node send-email.js
