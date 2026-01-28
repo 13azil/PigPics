@@ -363,7 +363,8 @@ async function main() {
     let successCount = 0;
     let failCount = 0;
 
-    for (const email of subscribers) {
+    for (let i = 0; i < subscribers.length; i++) {
+        const email = subscribers[i];
         try {
             await sendEmail(email, subject, html, apiKey);
             console.log(`Sent to: ${email}`);
@@ -371,6 +372,10 @@ async function main() {
         } catch (error) {
             console.error(`Failed to send to ${email}:`, error.message);
             failCount++;
+        }
+        // Wait 600ms between emails to stay under Resend's 2 requests/second limit
+        if (i < subscribers.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 600));
         }
     }
 
