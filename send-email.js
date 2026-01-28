@@ -293,18 +293,18 @@ function createEmailHtml(content, imageUrl) {
 `;
 }
 
-async function sendEmail(to, subject, html, apiKey) {
+async function sendEmail(to, subject, html, apiKey, fromEmail) {
     return new Promise((resolve, reject) => {
         const data = JSON.stringify({
-            from: 'Daily Pig Pics <onboarding@resend.dev>',
-            to: [to],
+            personalizations: [{ to: [{ email: to }] }],
+            from: { email: fromEmail, name: 'Daily Pig Pics' },
             subject: subject,
-            html: html
+            content: [{ type: 'text/html', value: html }]
         });
 
         const options = {
-            hostname: 'api.resend.com',
-            path: '/emails',
+            hostname: 'api.sendgrid.com',
+            path: '/v3/mail/send',
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -318,7 +318,7 @@ async function sendEmail(to, subject, html, apiKey) {
             res.on('data', chunk => body += chunk);
             res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve(JSON.parse(body));
+                    resolve({ success: true });
                 } else {
                     reject(new Error(`HTTP ${res.statusCode}: ${body}`));
                 }
@@ -332,9 +332,15 @@ async function sendEmail(to, subject, html, apiKey) {
 }
 
 async function main() {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.SENDGRID_API_KEY;
     if (!apiKey) {
-        console.error('RESEND_API_KEY environment variable is required');
+        console.error('SENDGRID_API_KEY environment variable is required');
+        process.exit(1);
+    }
+
+    const fromEmail = process.env.FROM_EMAIL;
+    if (!fromEmail) {
+        console.error('FROM_EMAIL environment variable is required');
         process.exit(1);
     }
 
@@ -366,7 +372,7 @@ async function main() {
     for (let i = 0; i < subscribers.length; i++) {
         const email = subscribers[i];
         try {
-            await sendEmail(email, subject, html, apiKey);
+            await sendEmail(email, subject, html, apiKey, fromEmail);
             console.log(`Sent to: ${email}`);
             successCount++;
         } catch (error) {
